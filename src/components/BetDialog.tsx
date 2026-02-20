@@ -1,13 +1,21 @@
 import { useState, useRef, useEffect } from 'react'
-import { db } from '../db.js'
+import { db } from '../db'
+import type { AnimalWithMeta, Bet } from '../types'
 
-export default function BetDialog({ animal, bets, activeGameId, onClose }) {
+interface BetDialogProps {
+  animal: AnimalWithMeta
+  bets: Bet[]
+  activeGameId: number
+  onClose: () => void
+}
+
+export default function BetDialog({ animal, bets, activeGameId, onClose }: BetDialogProps) {
   const [amount, setAmount] = useState('')
   const [cellNotes, setCellNotes] = useState(animal.notes || '')
   const [cellTags, setCellTags] = useState(animal.tags || '')
-  const [editingBetId, setEditingBetId] = useState(null)
+  const [editingBetId, setEditingBetId] = useState<number | null>(null)
   const [editingAmount, setEditingAmount] = useState('')
-  const amountRef = useRef(null)
+  const amountRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     amountRef.current?.focus()
@@ -20,16 +28,16 @@ export default function BetDialog({ animal, bets, activeGameId, onClose }) {
       animalId: animal.id,
       amount: num,
       gameId: activeGameId,
-    })
+    } as Bet)
     setAmount('')
     amountRef.current?.focus()
   }
 
-  const handleDelete = async (betId) => {
+  const handleDelete = async (betId: number) => {
     await db.bets.delete(betId)
   }
 
-  const handleStartEdit = (bet) => {
+  const handleStartEdit = (bet: Bet) => {
     setEditingBetId(bet.id)
     setEditingAmount(String(bet.amount))
   }
@@ -40,13 +48,12 @@ export default function BetDialog({ animal, bets, activeGameId, onClose }) {
       setEditingBetId(null)
       return
     }
-    await db.bets.update(editingBetId, { amount: num })
+    await db.bets.update(editingBetId!, { amount: num })
     setEditingBetId(null)
   }
 
-  const handleTagsChange = async (value) => {
+  const handleTagsChange = async (value: string) => {
     setCellTags(value)
-    // Update per-game metadata
     const meta = await db.animalGameMeta
       .where('[gameId+animalId]')
       .equals([activeGameId, animal.id])
@@ -56,9 +63,8 @@ export default function BetDialog({ animal, bets, activeGameId, onClose }) {
     }
   }
 
-  const handleNotesChange = async (value) => {
+  const handleNotesChange = async (value: string) => {
     setCellNotes(value)
-    // Update per-game metadata
     const meta = await db.animalGameMeta
       .where('[gameId+animalId]')
       .equals([activeGameId, animal.id])
@@ -68,7 +74,7 @@ export default function BetDialog({ animal, bets, activeGameId, onClose }) {
     }
   }
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleAdd()
   }
 

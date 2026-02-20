@@ -1,18 +1,25 @@
 import { useState } from 'react'
-import { switchGame, deleteGame, copyGame, copyGameAsSum, renameGame, exportGame } from '../db.js'
+import { switchGame, deleteGame, copyGame, copyGameAsSum, renameGame, exportGame } from '../db'
+import type { Game } from '../types'
 
-export default function GameManagerDialog({ games, activeGameId, onClose }) {
-  const [editingId, setEditingId] = useState(null)
+interface GameManagerDialogProps {
+  games: Game[]
+  activeGameId: number
+  onClose: () => void
+}
+
+export default function GameManagerDialog({ games, activeGameId, onClose }: GameManagerDialogProps) {
+  const [editingId, setEditingId] = useState<number | null>(null)
   const [editName, setEditName] = useState('')
 
   const sortedGames = [...games].sort((a, b) => b.createdAt - a.createdAt)
 
-  const handleSwitch = async (gameId) => {
+  const handleSwitch = async (gameId: number) => {
     await switchGame(gameId)
     onClose()
   }
 
-  const handleDelete = async (game) => {
+  const handleDelete = async (game: Game) => {
     if (games.length <= 1) {
       alert('Không thể xoá ván cuối cùng.')
       return
@@ -22,20 +29,20 @@ export default function GameManagerDialog({ games, activeGameId, onClose }) {
     }
   }
 
-  const handleCopy = async (game) => {
+  const handleCopy = async (game: Game) => {
     await copyGame(game.id, `${game.name} (bản sao)`)
   }
 
-  const handleCopySum = async (game) => {
+  const handleCopySum = async (game: Game) => {
     await copyGameAsSum(game.id, `${game.name} (tổng)`)
   }
 
-  const handleStartRename = (game) => {
+  const handleStartRename = (game: Game) => {
     setEditingId(game.id)
     setEditName(game.name)
   }
 
-  const handleExport = async (game) => {
+  const handleExport = async (game: Game) => {
     const data = await exportGame(game.id)
     const json = JSON.stringify(data, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
@@ -48,7 +55,7 @@ export default function GameManagerDialog({ games, activeGameId, onClose }) {
   }
 
   const handleSaveRename = async () => {
-    if (editName.trim()) {
+    if (editName.trim() && editingId !== null) {
       await renameGame(editingId, editName.trim())
     }
     setEditingId(null)

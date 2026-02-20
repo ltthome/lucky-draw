@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "deploy": "vite build && cd dist && git init && git add -A && git commit -m 'Deploy' && git push -f https://github.com/ltthome/lucky-draw.git master:gh-pages && cd .."
+    "typecheck": "tsc --noEmit",
+    "deploy": "tsc --noEmit && vite build && cd dist && git init && git add -A && git commit -m 'Deploy' && git push -f https://github.com/ltthome/lucky-draw.git master:gh-pages && cd .."
   },
   "dependencies": {
     "dexie": "^4.3.0",
@@ -16,7 +17,10 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
+    "typescript": "^5.9.3",
     "vite": "^7.3.1"
   }
 }

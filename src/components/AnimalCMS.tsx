@@ -1,9 +1,21 @@
 import { useState } from 'react'
-import { db } from '../db.js'
+import { db } from '../db'
+import type { Animal } from '../types'
 
-export default function AnimalCMS({ animals }) {
-  const [edits, setEdits] = useState(() =>
-    animals.reduce((acc, a) => {
+interface AnimalCMSProps {
+  animals: Animal[]
+}
+
+interface AnimalEditData {
+  name: string
+  otherName: string
+  defaultTags: string
+  defaultNotes: string
+}
+
+export default function AnimalCMS({ animals }: AnimalCMSProps) {
+  const [edits, setEdits] = useState<Record<number, AnimalEditData>>(() =>
+    animals.reduce<Record<number, AnimalEditData>>((acc, a) => {
       acc[a.id] = {
         name: a.name,
         otherName: a.otherName || '',
@@ -15,7 +27,7 @@ export default function AnimalCMS({ animals }) {
   )
   const [saved, setSaved] = useState(false)
 
-  const handleChange = (id, field, value) => {
+  const handleChange = (id: number, field: keyof AnimalEditData, value: string) => {
     setEdits((prev) => ({
       ...prev,
       [id]: { ...prev[id], [field]: value },

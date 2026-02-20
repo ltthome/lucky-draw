@@ -1,6 +1,14 @@
-import { db, createGame } from '../db.js'
+import { db, createGame } from '../db'
+import type { Game } from '../types'
 
-export default function Header({ columns, setColumns, activeGame, onOpenGameManager }) {
+interface HeaderProps {
+  columns: 3 | 6
+  setColumns: (cols: 3 | 6) => void
+  activeGame: Game | undefined
+  onOpenGameManager: () => void
+}
+
+export default function Header({ columns, setColumns, activeGame, onOpenGameManager }: HeaderProps) {
   const handleNewRound = async () => {
     if (window.confirm('Tạo ván mới?')) {
       const count = await db.games.count()

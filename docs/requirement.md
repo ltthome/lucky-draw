@@ -20,10 +20,11 @@ The toolbar ("3 cột / 6 cột", "Ván mới", game selector) is fixed at the *
 
 ## 3. Tech Stack
 
-| Layer        | Technology                         |
-| ------------ | ---------------------------------- |
-| Frontend     | React JS                           |
-| Data Storage | IndexedDB (local, no backend needed) |
+| Layer        | Technology                              |
+| ------------ | --------------------------------------- |
+| Frontend     | React with TypeScript                   |
+| Build        | Vite 7                                  |
+| Data Storage | IndexedDB via Dexie (local, no backend) |
 
 ## 4. Target Devices / Browsers
 
@@ -33,7 +34,7 @@ The toolbar ("3 cột / 6 cột", "Ván mới", game selector) is fixed at the *
 
 ## 5. The 36 Animals
 
-Animal names and default configuration are stored in `src/db.js` (`DEFAULT_ANIMALS`) and deployed via GitHub Pages. Changes to the source file are the only way to update animal names or default configuration.
+Animal names and default configuration are stored in `src/data/default-animals.ts` (`DEFAULT_ANIMALS`) and deployed via GitHub Pages. Changes to the source file are the only way to update animal names or default configuration.
 
 | #  | Name     | Other Name   |
 | -- | -------- | ------------ |
@@ -116,14 +117,14 @@ Displayed immediately below the animal grid, always visible for the active game:
 
 ### 6.4 Default Cell Configuration
 
-- Each animal has **default tags** and **default notes** defined directly in the source code (`DEFAULT_ANIMALS` array in `src/db.js`)
+- Each animal has **default tags** and **default notes** defined directly in the source code (`DEFAULT_ANIMALS` array in `src/data/default-animals.ts`)
 - **To update defaults**: edit `defaultTags` / `defaultNotes` for any animal in that array, then deploy to GitHub Pages — no UI or version bump needed
 - On every page load, the app automatically syncs the source-code defaults into IndexedDB (`db.on('ready')`), so **all mobile browsers receive the new defaults after the next deploy** without any manual setup
 - When creating a new game ("Ván mới"), the current defaults are applied to all cells of the new game
 - After a game is created, tags and notes can be edited per-game (via the bet dialog) without affecting:
   - The source-code defaults (used for future new games)
   - Any other existing games (each game stores tags/notes independently)
-- There is **no settings UI** for defaults — configure them in `src/db.js` and redeploy
+- There is **no settings UI** for defaults — configure them in `src/data/default-animals.ts` and redeploy
 
 ### 6.4 Multi-Game Management
 
@@ -135,7 +136,7 @@ Displayed immediately below the animal grid, always visible for the active game:
   - **Rename**: Edit a game's name inline in the game manager
   - **Copy (Chép)**: Duplicate all individual bet entries, tags, and notes from an existing game to a new game (appends " (bản sao)" to name)
   - **Copy as Sum (Chép ∑)**: Create a new game where each animal has exactly one bet entry equal to the sum of all its bets in the source game — tags and notes are also copied (appends " (tổng)" to name)
-  - **Export (Xuất)**: Download the game's bets and metadata as a `.json` file. This file can be pasted into the `SEEDED_GAMES` array in `src/db.js` and deployed to GitHub Pages, causing all devices to automatically receive the game on the next page load
+  - **Export (Xuất)**: Download the game's bets and metadata as a `.json` file. This file can be pasted into the `SEEDED_GAMES` array in `src/data/seeded-games.ts` and deployed to GitHub Pages, causing all devices to automatically receive the game on the next page load
   - **Delete**: Remove a game and all its data (bets, tags, notes) with confirmation dialog. Cannot delete the last remaining game
 - **Game Manager Dialog**: A bottom-sheet modal (same pattern as bet dialog) listing all games sorted newest-first
   - Active game shown with a green dot indicator
@@ -145,15 +146,14 @@ Displayed immediately below the animal grid, always visible for the active game:
   - `settings` table: key-value store for app settings (e.g., `activeGameId`)
   - `bets` table: each bet has a `gameId` foreign key linking to the active game
   - `animalGameMeta` table: stores per-game tags and notes (`gameId`, `animalId`, `tags`, `notes`)
-  - `settings` table also stores `importedSeedIds` (JSON array) — tracks which seeded games have already been imported on this device
 - **Seeded Games (cross-device distribution)**:
-  - The `SEEDED_GAMES` array in `src/db.js` can hold exported game objects
+  - The `SEEDED_GAMES` array in `src/data/seeded-games.ts` can hold exported game objects
   - On every page load, the app checks for any entries not yet imported (by `seedId`) and adds them to IndexedDB
-  - Workflow: Export a game → paste the JSON into `SEEDED_GAMES` in source code → deploy to GitHub Pages → all devices receive the game automatically on next load
+  - Workflow: Export a game → paste the JSON into `SEEDED_GAMES` in `src/data/seeded-games.ts` → deploy to GitHub Pages → all devices receive the game automatically on next load
 
 ### 6.5 Animal Configuration (Source Code)
 
-- All 36 animals are defined in the `DEFAULT_ANIMALS` array in `src/db.js`
+- All 36 animals are defined in the `DEFAULT_ANIMALS` array in `src/data/default-animals.ts`
 - Each entry contains: `order`, `name`, `otherName`, `defaultTags`, `defaultNotes`
 - To update any value: edit the array and redeploy to GitHub Pages
 - On the next page load all devices pick up the new defaults automatically (via `db.on('ready')`)
@@ -184,7 +184,7 @@ Displayed immediately below the animal grid, always visible for the active game:
 - No payout/multiplier calculation (may add later)
 - Multiple games can be stored and switched between
 - Each game stores its own bets, tags, and notes independently
-- Default tags and notes are defined in source code (`src/db.js`) and auto-synced to all devices on deploy
+- Default tags and notes are defined in source code (`src/data/default-animals.ts`) and auto-synced to all devices on deploy
 - Games can be exported as `.json` and seeded back into all devices via source code + GitHub Pages deploy
 
 ## 8. Future Enhancements

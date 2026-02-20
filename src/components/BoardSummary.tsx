@@ -1,6 +1,18 @@
-export default function BoardSummary({ animals, betsByAnimal }) {
-  // Pre-compute per-animal totals once
-  const animalTotals = animals.map(animal => ({
+import type { AnimalWithMeta, BetsByAnimal } from '../types'
+
+interface BoardSummaryProps {
+  animals: AnimalWithMeta[]
+  betsByAnimal: BetsByAnimal
+}
+
+interface AnimalTotal {
+  id: number
+  name: string
+  total: number
+}
+
+export default function BoardSummary({ animals, betsByAnimal }: BoardSummaryProps) {
+  const animalTotals: AnimalTotal[] = animals.map(animal => ({
     id: animal.id,
     name: animal.name,
     total: (betsByAnimal[animal.id] || []).reduce((s, b) => s + b.amount, 0),
@@ -9,23 +21,19 @@ export default function BoardSummary({ animals, betsByAnimal }) {
   const grandTotal = animalTotals.reduce((s, a) => s + a.total, 0)
   const activeCount = animalTotals.filter(a => a.total > 0).length
 
-  // All animals with bets, sorted descending by total
   const topAll = [...animalTotals]
     .filter(a => a.total > 0)
     .sort((a, b) => b.total - a.total)
 
-  // Column sums — always based on 6-column physical layout (animals ordered 1-36)
-  // col 0: indices 0,6,12,18,24,30  col 1: indices 1,7,13,19,25,31  etc.
-  const colSums = Array(6).fill(0)
+  const colSums = Array<number>(6).fill(0)
   animalTotals.forEach((a, i) => {
     colSums[i % 6] += a.total
   })
 
-  const fmt = (n) => n.toLocaleString('vi-VN')
+  const fmt = (n: number): string => n.toLocaleString('vi-VN')
 
   return (
     <div className="summary">
-      {/* Stat chips */}
       <div className="summary-stats">
         <div className="summary-stat-card summary-stat-total">
           <span className="summary-stat-num">{fmt(grandTotal)}</span>
@@ -39,7 +47,6 @@ export default function BoardSummary({ animals, betsByAnimal }) {
         </div>
       </div>
 
-      {/* Column sums */}
       <div className="summary-cols-wrap">
         <span className="summary-section-lbl">Tổng cột</span>
         <div className="summary-cols">
@@ -52,7 +59,6 @@ export default function BoardSummary({ animals, betsByAnimal }) {
         </div>
       </div>
 
-      {/* All animals with bets, sorted descending */}
       {topAll.length > 0 && (
         <div className="summary-top">
           <span className="summary-section-lbl">Đánh nhiều</span>

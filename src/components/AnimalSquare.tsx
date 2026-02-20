@@ -1,4 +1,12 @@
-export default function AnimalSquare({ animal, bets, onClick }) {
+import type { AnimalWithMeta, Bet } from '../types'
+
+interface AnimalSquareProps {
+  animal: AnimalWithMeta
+  bets: Bet[]
+  onClick: () => void
+}
+
+export default function AnimalSquare({ animal, bets, onClick }: AnimalSquareProps) {
   const total = bets.reduce((sum, b) => sum + b.amount, 0)
   const hasBets = bets.length > 0
   const betAmounts = bets.map((b) => b.amount).join(' ')

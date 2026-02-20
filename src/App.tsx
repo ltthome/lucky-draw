@@ -1,15 +1,16 @@
 import { useState, useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from './db.js'
-import Header from './components/Header.jsx'
-import GameBoard from './components/GameBoard.jsx'
-import BoardSummary from './components/BoardSummary.jsx'
-import BetDialog from './components/BetDialog.jsx'
-import GameManagerDialog from './components/GameManagerDialog.jsx'
+import { db } from './db'
+import type { AnimalWithMeta, BetsByAnimal, AnimalGameMeta } from './types'
+import Header from './components/Header'
+import GameBoard from './components/GameBoard'
+import BoardSummary from './components/BoardSummary'
+import BetDialog from './components/BetDialog'
+import GameManagerDialog from './components/GameManagerDialog'
 
 export default function App() {
-  const [selectedAnimal, setSelectedAnimal] = useState(null)
-  const [columns, setColumns] = useState(6)
+  const [selectedAnimal, setSelectedAnimal] = useState<AnimalWithMeta | null>(null)
+  const [columns, setColumns] = useState<3 | 6>(6)
   const [showGameManager, setShowGameManager] = useState(false)
 
   const animals = useLiveQuery(() => db.animals.orderBy('order').toArray(), [])
@@ -29,9 +30,9 @@ export default function App() {
     [activeGameId]
   )
 
-  const betsByAnimal = useMemo(() => {
+  const betsByAnimal = useMemo<BetsByAnimal>(() => {
     if (!bets) return {}
-    return bets.reduce((acc, bet) => {
+    return bets.reduce<BetsByAnimal>((acc, bet) => {
       if (!acc[bet.animalId]) acc[bet.animalId] = []
       acc[bet.animalId].push(bet)
       return acc
@@ -39,15 +40,14 @@ export default function App() {
   }, [bets])
 
   const metaByAnimal = useMemo(() => {
-    if (!gameMeta) return {}
-    return gameMeta.reduce((acc, meta) => {
+    if (!gameMeta) return {} as Record<number, AnimalGameMeta>
+    return gameMeta.reduce<Record<number, AnimalGameMeta>>((acc, meta) => {
       acc[meta.animalId] = meta
       return acc
     }, {})
   }, [gameMeta])
 
-  // Merge animals with their per-game metadata
-  const animalsWithMeta = useMemo(() => {
+  const animalsWithMeta = useMemo<AnimalWithMeta[]>(() => {
     if (!animals) return []
     return animals.map(animal => ({
       ...animal,
@@ -82,7 +82,7 @@ export default function App() {
         <BetDialog
           animal={selectedAnimal}
           bets={betsByAnimal[selectedAnimal.id] || []}
-          activeGameId={activeGameId}
+          activeGameId={activeGameId!}
           onClose={() => setSelectedAnimal(null)}
         />
       )}
@@ -90,7 +90,7 @@ export default function App() {
       {showGameManager && (
         <GameManagerDialog
           games={games}
-          activeGameId={activeGameId}
+          activeGameId={activeGameId!}
           onClose={() => setShowGameManager(false)}
         />
       )}
