@@ -33,7 +33,7 @@ The toolbar ("3 cột / 6 cột", "Ván mới", game selector) is fixed at the *
 
 ## 5. The 36 Animals
 
-The animals should be stored in a CMS-like editable configuration so names, order, and display can be updated without code changes.
+Animal names and default configuration are stored in `src/db.js` (`DEFAULT_ANIMALS`) and deployed via GitHub Pages. Changes to the source file are the only way to update animal names or default configuration.
 
 | #  | Name     | Other Name   |
 | -- | -------- | ------------ |
@@ -80,14 +80,14 @@ The animals should be stored in a CMS-like editable configuration so names, orde
 
 - Switchable layout: **6 columns** (compact) or **3 columns** (larger, easier to read)
   - Toggle via the toolbar button at bottom
-  - Both modes feature visual grouping for better readability
-  - **3-column mode**: Every 2 rows (6 cells) have alternating backgrounds
+  - **3-column mode**: Every 2 rows (6 cells) have alternating backgrounds for better readability
     - Rows 1-2, 5-6, 9-10 share one style (white background)
     - Rows 3-4, 7-8, 11-12 share another style (light gray background)
-  - **6-column mode**: Every 2 rows (12 cells) have alternating backgrounds
-    - Rows 1-2, 5-6 share one style (white background)
-    - Rows 3-4 share another style (light gray background)
-  - 3-column mode scales up all fonts for readability
+    - Cells with bets get a light blue background highlight
+    - Larger fonts for better readability
+  - **6-column mode**: All cells have the same white background for consistency
+    - No alternating background colors
+    - Cells with bets show visual distinction through border color and shadow only (not background color)
 - Each square shows:
   - **Other Name** in subtle gray (less dominant)
   - **Animal Name** bold below it
@@ -96,6 +96,7 @@ The animals should be stored in a CMS-like editable configuration so names, orde
   - **Tags** as individual rounded pills with blue border below total (e.g., `1S` `2C`) — optional, comma-separated input, multiple per cell
   - **Notes** in yellow badge as the last row — optional per cell
 - Tapping/clicking a square opens an input form for that animal
+- Below the board a **summary bar** shows live statistics (see section 6.3)
 
 ### 6.2 Bet Input Per Square
 
@@ -105,33 +106,68 @@ The animals should be stored in a CMS-like editable configuration so names, orde
 - **Tags per cell** — comma-separated labels (e.g., `1S, 1C, 2S, 2C`), each displayed as a rounded blue pill badge
 - **One note per cell** — a free-text note attached to the animal square itself (e.g., "winner yesterday morning"), displayed in yellow as the last row
 
-### 6.3 Multi-Game Management
+### 6.3 Board Summary (Below the Grid)
+
+Displayed immediately below the animal grid, always visible for the active game:
+
+- **Tổng tịch / Số con**: Total money across all bets + count of animals that have at least one bet (e.g., `Tổng tịch: 1,250 · Số con: 12/36`)
+- **Tổng cột**: 6 values — one sum per physical column of the 6×6 grid (column 1 = animals 1,7,13,19,25,31 · column 2 = animals 2,8,14,20,26,32 · etc.). Each column value highlights blue when non-zero.
+- **Đánh nhiều**: All animals that have at least one bet, sorted by total descending (highest first). Displayed below Tổng cột. Only shown when at least one animal has bets.
+
+### 6.4 Default Cell Configuration
+
+- Each animal has **default tags** and **default notes** defined directly in the source code (`DEFAULT_ANIMALS` array in `src/db.js`)
+- **To update defaults**: edit `defaultTags` / `defaultNotes` for any animal in that array, then deploy to GitHub Pages — no UI or version bump needed
+- On every page load, the app automatically syncs the source-code defaults into IndexedDB (`db.on('ready')`), so **all mobile browsers receive the new defaults after the next deploy** without any manual setup
+- When creating a new game ("Ván mới"), the current defaults are applied to all cells of the new game
+- After a game is created, tags and notes can be edited per-game (via the bet dialog) without affecting:
+  - The source-code defaults (used for future new games)
+  - Any other existing games (each game stores tags/notes independently)
+- There is **no settings UI** for defaults — configure them in `src/db.js` and redeploy
+
+### 6.4 Multi-Game Management
 
 - The app supports **multiple games** (rounds) stored simultaneously
-- Each game contains only **bet numbers** — animals, tags, and notes are global (not per-game)
+- Each game stores **bet numbers, tags, and notes** independently — tags and notes are initialized from animal defaults when creating a new game
 - **Game operations:**
-  - **Create**: "Ván mới" button creates a new game (auto-named "Ván N") and switches to it
+  - **Create**: "Ván mới" button creates a new game (auto-named "Ván N"), applies default tags/notes to all animals, and switches to it
   - **Switch**: Tap the game name button in toolbar to open the game manager, then tap a game to switch
   - **Rename**: Edit a game's name inline in the game manager
-  - **Copy**: Duplicate all bets from an existing game to a new game (appends " (bản sao)" to name)
-  - **Delete**: Remove a game and all its bets (with confirmation dialog). Cannot delete the last remaining game
+  - **Copy (Chép)**: Duplicate all individual bet entries, tags, and notes from an existing game to a new game (appends " (bản sao)" to name)
+  - **Copy as Sum (Chép ∑)**: Create a new game where each animal has exactly one bet entry equal to the sum of all its bets in the source game — tags and notes are also copied (appends " (tổng)" to name)
+  - **Export (Xuất)**: Download the game's bets and metadata as a `.json` file. This file can be pasted into the `SEEDED_GAMES` array in `src/db.js` and deployed to GitHub Pages, causing all devices to automatically receive the game on the next page load
+  - **Delete**: Remove a game and all its data (bets, tags, notes) with confirmation dialog. Cannot delete the last remaining game
 - **Game Manager Dialog**: A bottom-sheet modal (same pattern as bet dialog) listing all games sorted newest-first
   - Active game shown with a green dot indicator
-  - Each game row has action buttons: "Đổi tên" (Rename), "Chép" (Copy), "Xoá" (Delete)
+  - Each game row has action buttons: "Đổi tên" (Rename), "Chép" (Copy), "Chép ∑" (Copy as Sum), "Xuất" (Export), "Xoá" (Delete)
 - **Data model:**
   - `games` table: `id` (auto-increment), `name`, `createdAt`
   - `settings` table: key-value store for app settings (e.g., `activeGameId`)
   - `bets` table: each bet has a `gameId` foreign key linking to the active game
+  - `animalGameMeta` table: stores per-game tags and notes (`gameId`, `animalId`, `tags`, `notes`)
+  - `settings` table also stores `importedSeedIds` (JSON array) — tracks which seeded games have already been imported on this device
+- **Seeded Games (cross-device distribution)**:
+  - The `SEEDED_GAMES` array in `src/db.js` can hold exported game objects
+  - On every page load, the app checks for any entries not yet imported (by `seedId`) and adds them to IndexedDB
+  - Workflow: Export a game → paste the JSON into `SEEDED_GAMES` in source code → deploy to GitHub Pages → all devices receive the game automatically on next load
 
-### 6.4 Toolbar (Bottom)
+### 6.5 Animal Configuration (Source Code)
+
+- All 36 animals are defined in the `DEFAULT_ANIMALS` array in `src/db.js`
+- Each entry contains: `order`, `name`, `otherName`, `defaultTags`, `defaultNotes`
+- To update any value: edit the array and redeploy to GitHub Pages
+- On the next page load all devices pick up the new defaults automatically (via `db.on('ready')`)
+- Existing game-specific tags/notes are **never overwritten** by a default sync — only the stored defaults change
+
+### 6.6 Toolbar (Bottom)
 
 - Fixed at the **bottom** of the page
 - Contains: **"3 cột / 6 cột"** (layout toggle), **"Ván mới"** (New Round), **Game Name ▾** (game selector)
-- "3 cột / 6 cột" button toggles between 3-column and 6-column layouts
-- "Ván mới" creates a new game and switches to it
-- Game name button shows the active game's name and opens the Game Manager dialog
+- "3 cột / 6 cột" toggles between 3-column and 6-column layouts
+- "Ván mới" creates a new game with source-code defaults applied to all cells, then switches to it
+- Game name button shows the active game name and opens the Game Manager dialog
 
-### 6.5 Data Persistence
+### 6.7 Data Persistence
 
 - All bets and configuration stored in **IndexedDB**
 - Data survives page refreshes and browser restarts
@@ -147,14 +183,14 @@ The animals should be stored in a CMS-like editable configuration so names, orde
 - Vietnamese only — no multi-language support needed
 - No payout/multiplier calculation (may add later)
 - Multiple games can be stored and switched between
-- Games contain only bet data; animal config (tags, notes) is global
-- No data export (may add later)
+- Each game stores its own bets, tags, and notes independently
+- Default tags and notes are defined in source code (`src/db.js`) and auto-synced to all devices on deploy
+- Games can be exported as `.json` and seeded back into all devices via source code + GitHub Pages deploy
 
 ## 8. Future Enhancements
 
 - Payout / multiplier calculation
 - Bet history tracking across rounds (notes-based)
-- Data export (CSV, PDF)
 
 ---
 

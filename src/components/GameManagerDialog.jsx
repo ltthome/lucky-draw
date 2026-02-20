@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { switchGame, deleteGame, copyGame, renameGame } from '../db.js'
+import { switchGame, deleteGame, copyGame, copyGameAsSum, renameGame, exportGame } from '../db.js'
 
 export default function GameManagerDialog({ games, activeGameId, onClose }) {
   const [editingId, setEditingId] = useState(null)
@@ -26,9 +26,25 @@ export default function GameManagerDialog({ games, activeGameId, onClose }) {
     await copyGame(game.id, `${game.name} (bản sao)`)
   }
 
+  const handleCopySum = async (game) => {
+    await copyGameAsSum(game.id, `${game.name} (tổng)`)
+  }
+
   const handleStartRename = (game) => {
     setEditingId(game.id)
     setEditName(game.name)
+  }
+
+  const handleExport = async (game) => {
+    const data = await exportGame(game.id)
+    const json = JSON.stringify(data, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${game.name}.json`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleSaveRename = async () => {
@@ -76,6 +92,12 @@ export default function GameManagerDialog({ games, activeGameId, onClose }) {
                     </button>
                     <button className="btn btn-sm btn-toolbar-alt" onClick={() => handleCopy(game)}>
                       Chép
+                    </button>
+                    <button className="btn btn-sm btn-toolbar-alt" onClick={() => handleCopySum(game)}>
+                      Chép ∑
+                    </button>
+                    <button className="btn btn-sm btn-toolbar-alt" onClick={() => handleExport(game)}>
+                      Xuất
                     </button>
                     <button className="btn btn-sm btn-danger" onClick={() => handleDelete(game)}>
                       Xoá

@@ -46,12 +46,26 @@ export default function BetDialog({ animal, bets, activeGameId, onClose }) {
 
   const handleTagsChange = async (value) => {
     setCellTags(value)
-    await db.animals.update(animal.id, { tags: value })
+    // Update per-game metadata
+    const meta = await db.animalGameMeta
+      .where('[gameId+animalId]')
+      .equals([activeGameId, animal.id])
+      .first()
+    if (meta) {
+      await db.animalGameMeta.update(meta.id, { tags: value })
+    }
   }
 
   const handleNotesChange = async (value) => {
     setCellNotes(value)
-    await db.animals.update(animal.id, { notes: value })
+    // Update per-game metadata
+    const meta = await db.animalGameMeta
+      .where('[gameId+animalId]')
+      .equals([activeGameId, animal.id])
+      .first()
+    if (meta) {
+      await db.animalGameMeta.update(meta.id, { notes: value })
+    }
   }
 
   const handleKeyDown = (e) => {
